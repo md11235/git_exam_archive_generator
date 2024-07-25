@@ -5,6 +5,10 @@ import sys
 import numpy as np
 import pandas as pd
 
+from openpyxl import load_workbook
+
+import shutil
+
 STU_ID_CN_STAR = "*学号"
 STU_ID_CN = "学号"
 STU_ID_EN = "id"
@@ -49,6 +53,8 @@ class Submission:
                  presence_score_file,
                  semester_exam_file,
                  chapter_names=None):
+        self.main_template_excel_file = main_template_excel_file
+
         if chapter_names is None:
             chapter_names = LINUX_CHAPTER_NAMES
 
@@ -116,13 +122,32 @@ class Submission:
 
         print(self.df_main.loc[ (55.0 < self.df_main["备注"]) & (self.df_main["备注"]<60.0) ])
 
+    def to_excel(self, filename):
+        output_path = shutil.copy(self.main_template_excel_file, filename)
+
+        target_sheet_name = None
+        with pd.ExcelFile(output_path, engine='openpyxl') as reader:
+            target_sheet_name = reader.sheet_names[0]
+
+        writer = pd.ExcelWriter(output_path, engine="openpyxl", mode='a', if_sheet_exists='overlay')
+
+        df_tmp = self.df_main.copy(deep=True)
+        df_tmp.index = df_tmp.index.astype(str)
+
+        df_tmp.to_excel(
+            writer, sheet_name=target_sheet_name, startrow=2, startcol=0
+        )
+
+        writer.close()
+
 
 if __name__ == '__main__':
     submission = Submission(main_template_excel_file=sys.argv[1],
                             lab_score_csv_file=sys.argv[2],
                             presence_score_file=sys.argv[3],
                             semester_exam_file=sys.argv[4])
-
+    submission.to_excel("e:/tmp/linux-network22.xlsx")
+                            
 
 
 
